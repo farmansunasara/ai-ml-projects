@@ -1,0 +1,391 @@
+{% extends "prediction/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard – Machine Health Overview{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+  
+  .stat-card.normal {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  }
+  
+  .stat-card.fault {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  }
+  
+  .stat-card.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  .stat-card.info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  
+  .stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  
+  .machine-card {
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+  
+  .machine-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  }
+  
+  .machine-card.fault-active {
+    border-color: #dc3545;
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+  }
+  
+  .machine-card.normal-active {
+    border-color: #198754;
+    box-shadow: 0 0 20px rgba(25, 135, 84, 0.3);
+  }
+  
+  .metric-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .metric-card:hover {
+    background: #e9ecef;
+    transform: scale(1.05);
+  }
+  
+  .metric-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #212529;
+  }
+  
+  .metric-unit {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-left: 0.25rem;
+  }
+  
+  .status-badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  .status-badge.normal {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-badge.fault {
+    background: #f8d7da;
+    color: #721c24;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+  
+  .confidence-progress {
+    height: 30px;
+    border-radius: 15px;
+    background: #e9ecef;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .confidence-bar {
+    height: 100%;
+    border-radius: 15px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.875rem;
+  }
+  
+  .chart-container {
+    position: relative;
+    height: 300px;
+  }
+  
+  .sparkline-container {
+    height: 40px;
+    margin-top: 0.5rem;
+  }
+  
+  .last-updated {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+  }
+  
+  .refresh-indicator {
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
+  
+  .refresh-indicator.active {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Machine Health Dashboard</h1>
+    <p class="text-muted mb-0">Real-time monitoring and fault detection</p>
+  </div>
+  <div>
+    <button id="refreshBtn" class="btn btn-primary btn-lg">
+      <i class="fas fa-sync-alt me-2"></i>Refresh
+      <span class="refresh-indicator ms-2"><i class="fas fa-circle"></i></span>
+    </button>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div id="statsContainer" class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card info">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Total Machines</div>
+          <div class="stat-value" id="statTotalMachines">0</div>
+        </div>
+        <i class="fas fa-server stat-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card normal">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Normal Operations</div>
+          <div class="stat-value" id="statNormal">0</div>
+        </div>
+        <i class="fas fa-check-circle stat-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card fault">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Fault Detections</div>
+          <div class="stat-value" id="statFaults">0</div>
+        </div>
+        <i class="fas fa-exclamation-triangle stat-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card warning">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Avg Confidence</div>
+          <div class="stat-value" id="statAvgConfidence">0%</div>
+        </div>
+        <i class="fas fa-chart-line stat-icon"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Machine Cards -->
+<div id="machineList" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+  <!-- Machine cards will be inserted here dynamically -->
+</div>
+
+<!-- Charts Section -->
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-header bg-white border-bottom-0 pb-0">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-pie me-2 text-primary"></i>Fault Distribution (24h)
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="faultDistributionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-header bg-white border-bottom-0 pb-0">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-line me-2 text-primary"></i>Confidence Timeline
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="confidenceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" class="empty-state" style="display: none;">
+  <i class="fas fa-industry"></i>
+  <h4>No Machines Detected</h4>
+  <p>Start the IoT client to begin monitoring</p>
+</div>
+
+<!-- Machine Card Template -->
+<template id="machineCardTemplate">
+  <div class="col">
+    <div class="card machine-card h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-0">
+            <i class="fas fa-industry me-2 text-primary"></i>
+            <span class="machine-id">Unknown</span>
+          </h5>
+        </div>
+        <span class="status-badge"></span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="metric-label">Temperature</div>
+              <div>
+                <span class="metric-value temperature">—</span>
+                <span class="metric-unit">°C</span>
+              </div>
+              <div class="sparkline-container">
+                <canvas class="sparkline" data-metric="temperature"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="metric-label">Vibration</div>
+              <div>
+                <span class="metric-value vibration">—</span>
+                <span class="metric-unit">Hz</span>
+              </div>
+              <div class="sparkline-container">
+                <canvas class="sparkline" data-metric="vibration"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="metric-label">Pressure</div>
+              <div>
+                <span class="metric-value pressure">—</span>
+                <span class="metric-unit">bar</span>
+              </div>
+              <div class="sparkline-container">
+                <canvas class="sparkline" data-metric="pressure"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="metric-label">Current</div>
+              <div>
+                <span class="metric-value current">—</span>
+                <span class="metric-unit">A</span>
+              </div>
+              <div class="sparkline-container">
+                <canvas class="sparkline" data-metric="current"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 pt-3 border-top">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Prediction</span>
+            <span class="fault-type fw-bold"></span>
+          </div>
+          <div class="confidence-progress">
+            <div class="confidence-bar" role="progressbar"></div>
+          </div>
+          <div class="last-updated text-center">
+            <i class="far fa-clock me-1"></i>
+            <span class="last-update-time">Just now</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+<script src="{% static 'prediction/js/dashboard.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{
+  "model_name": "XGBoost",
+  "best_params": {
+    "learning_rate": "0.05",
+    "max_depth": "5",
+    "n_estimators": "100",
+    "subsample": "0.8"
+  },
+  "test_accuracy": 79.57,
+  "test_f1": 73.83,
+  "test_roc_auc": 89.45,
+  "features": [
+    "ph",
+    "Hardness",
+    "Solids",
+    "Chloramines",
+    "Sulfate",
+    "Conductivity",
+    "Organic_carbon",
+    "Trihalomethanes",
+    "Turbidity"
+  ],
+  "top3_features": [
+    "Sulfate",
+    "ph",
+    "Hardness"
+  ],
+  "wqi_min": 111.9706,
+  "wqi_max": 259.4989
+}

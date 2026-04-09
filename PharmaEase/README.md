@@ -1,73 +1,47 @@
-# PharmaEase — Pharmacy Management System
-**Internship Project | Brainybeam Info-Tech PVT LTD**
-**Field: Data Science & Machine Learning with Data Analytics**
+# PharmaEase
 
----
+PharmaEase is a Streamlit-based pharmacy analytics demo that bundles trained machine learning models for four workflows:
+
+- Inventory demand forecasting
+- Prescription-to-drug recommendation
+- Sales prediction
+- Staff requirement estimation
 
 ## Project Structure
 
-```
-PharmaEase/
-├── data/
-│   ├── generate_data.py     ← Run this first to create all CSVs
-│   ├── medicines.csv
-│   ├── sales.csv
-│   ├── prescriptions.csv
-│   ├── employees.csv
-│   └── customers.csv
-├── notebooks/
-│   ├── phase2_eda.ipynb     ← Phase 2: Exploratory Data Analysis
-│   └── phase3_ml.ipynb      ← Phase 3: ML Models
-├── app/
-│   └── main.py              ← Phase 4: Streamlit App
-├── models/
-│   └── (saved .pkl files)   ← Phase 3 output
-└── requirements.txt
-```
+- `app.py`: Streamlit dashboard entrypoint
+- `modules/`: Inference helpers for each business area
+- `models/`: Serialized ML and time-series model artifacts
+- `data/raw/`: Source datasets used for training and experimentation
+- `notebooks/`: Jupyter notebooks for model development
 
----
+## Modules
 
-## Phase Plan
+### Inventory Forecasting
 
-| Phase | Task | Deliverable |
-|-------|------|-------------|
-| 1 | Setup & data preparation | 5 CSV files + project folder |
-| 2 | EDA in Jupyter | Notebook with insights & charts |
-| 3 | ML models | Forecasting + stock-out prediction |
-| 4 | Streamlit dashboard | 5-module working app |
-| 5 | Report & presentation | Final report + live demo |
+- Uses per-drug ARIMA models stored in `models/*_arima.pkl`
+- Forecasts demand for a selected medicine over a configurable number of days
 
----
+### Prescription Tracking
 
-## Setup Instructions
+- Uses a TF-IDF vectorizer and a classifier to recommend a likely drug from symptom text
 
-### Step 1 — Install libraries
-```bash
-pip install -r requirements.txt
-```
+### Sales Prediction
 
-### Step 2 — Generate datasets
-```bash
-cd data
-python generate_data.py
-```
+- Predicts revenue from calendar and transaction features
 
-### Step 3 — Open Jupyter for EDA
-```bash
-jupyter notebook notebooks/phase2_eda.ipynb
-```
+### Employee Management
 
-### Step 4 — Run Streamlit app
-```bash
-streamlit run app/main.py
-```
+- Predicts required staff count from workload features
 
----
+## Run Locally
 
-## Tech Stack
-- **Python** — primary language
-- **Pandas / NumPy** — data handling
-- **Matplotlib / Seaborn / Plotly** — visualizations
-- **Scikit-learn** — ML models
-- **Streamlit** — dashboard UI
-- **Jupyter Notebook** — EDA & experimentation
+1. Create and activate a Python virtual environment.
+2. Install dependencies with `pip install -r requirements.txt`.
+3. Start the app with `streamlit run app.py`.
+
+## Notes
+
+- Model files are loaded from the repository `models/` directory.
+- The dashboard is intentionally lightweight and focused on inference rather than model training.
+
